@@ -1,57 +1,82 @@
-// Teachable Machine ml5 image example - modified from The Coding Train https://thecodingtrain.com/TeachableMachine/1-teachable-machine.html
-let video;
-let label = "waiting...";
-let confidence = 0.0; 
-let classifier;
-//let modelURL = 'https://teachablemachine.withgoogle.com/models/9ZhtUP8P/';
-let modelURL = 'https://city535353.github.io/imageai2/';
-let input;
-let img; 
+// Copyright (c) 2019 ml5
+//
+// This software is released under the MIT License.
+// https://opensource.org/licenses/MIT
 
-// STEP 1: Load the model
+/* ===
+ml5 Example
+Webcam Image Classification using a pre-trained customized model and p5.js
+This example uses p5 preload function to create the classifier
+=== */
+
+// Classifier Variable
+let classifier;
+// Model URL
+let imageModelURL = 'https://city535353.github.io/imageai/';
+
+// Video
+let video;
+let flippedVideo;
+// To store the classification
+let label = "";
+
+// Load the model first
 function preload() {
-  classifier = ml5.imageClassifier(modelURL + 'model.json');
+  classifier = ml5.imageClassifier(imageModelURL + 'model.json');
 }
 
 function setup() {
-  createCanvas(640, 520);
-  input = createFileInput(handleFile);
-  input.position(0, 0);
+  createCanvas(320, 260);
+  // Create the video
+  var constraints = {
+    audio: false,
+    video: {
+      facingMode: {
+        exact: "environment"
+      }
+    }    
+    //video: {
+      //facingMode: "user"
+    //} 
+  };
+  video = createCapture(constraints);
+  video.size(320, 240);
+  video.hide();
+
+  flippedVideo = ml5.flipImage(video)
+  // Start classifying
+  classifyVideo();
 }
 
 function draw() {
   background(0);
+  // Draw the video
+  image(flippedVideo, 0, 0);
 
-  // STEP 4: Show current label
-  textSize(32);
-  textAlign(CENTER, CENTER);
+  // Draw the label
   fill(255);
-  text(label + " " + confidence, width / 2, height - 16);
-  
-  if (img) {
-    image(img, 0, 0, width, 480);
-  }
+  textSize(16);
+  textAlign(CENTER);
+  text(label, width / 2, height - 4);
 }
 
-// STEP 3: Get the classification
-function gotResults(error, results) {
+// Get a prediction for the current video frame
+function classifyVideo() {
+  flippedVideo = ml5.flipImage(video)
+  classifier.classify(flippedVideo, gotResult);
+}
+
+// When we get a result
+function gotResult(error, results) {
+  // If there is an error
   if (error) {
     console.error(error);
     return;
   }
-  // Store the label and classify again
+  // The results are in an array ordered by confidence.
+  // console.log(results[0]);
   label = results[0].label;
-  confidence = nf(results[0].confidence, 0, 2);
-}
-
-// STEP 2: Handle the file-upload and do the classification
-function handleFile(file) {
-  print(file);
-  if (file.type === 'image') {
-    img = createImg(file.data, '');
-    img.hide();
-    classifier.classify(img, gotResults);
-  } else {
-    img = null;
-  }
+  ThunkableWebviewerExtension.postMessage(label);
+  // Classifiy again!
+  classifyVideo();
 }
